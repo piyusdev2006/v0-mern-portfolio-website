@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 export const metadata: Metadata = {
   title: "Naveen Singh - Full Stack Developer",
   description: "Portfolio of Naveen Singh, Full Stack Developer specializing in MERN stack",
-    generator: 'v0.dev'
+    generator: 'v0.app'
 }
 
 export default function RootLayout({

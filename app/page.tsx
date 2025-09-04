@@ -10,7 +10,6 @@ import {
   Linkedin,
   Mail,
   ExternalLink,
-  Code,
   User,
   Download,
   ArrowRight,
@@ -18,9 +17,7 @@ import {
   Star,
   ChevronDown,
   Sparkles,
-  Trophy,
-  Target,
-  TrendingUp,
+  Settings,
 } from "lucide-react"
 import Link from "next/link"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -31,6 +28,11 @@ import { TypingAnimation } from "@/components/typing-animation"
 import { MobileMenu } from "@/components/mobile-menu"
 import { ScrollReveal } from "@/components/scroll-reveal"
 import { ContactForm } from "@/components/contact-form"
+import { ProfileManager } from "@/components/profile-manager"
+import { TechShowcase } from "@/components/tech-showcase"
+import { ExpertiseHub } from "@/components/expertise-hub"
+import { RecognitionShowcase } from "@/components/recognition-showcase"
+import { useProfile } from "@/hooks/use-profile"
 
 const fadeInUp = {
   initial: { opacity: 0, y: 60 },
@@ -54,62 +56,16 @@ const scaleOnHover = {
   whileTap: { scale: 0.95 },
 }
 
-const skills = {
-  languages: ["JavaScript", "C++"],
-  frontend: ["HTML", "CSS", "Tailwind CSS", "React.js"],
-  backend: ["Express.js", "Node.js", "MongoDB", "MySQL"],
-  tools: ["Postman", "Git", "GitHub", "VS Code"],
-}
-
-const projects = [
-  {
-    title: "DevTinder",
-    description:
-      "A developer networking backend using Node.js, Express.js, and MongoDB with secure JWT authentication and RESTful APIs.",
-    tech: ["Express.js", "MongoDB", "Node.js"],
-    date: "April 2025",
-    features: ["User Authentication", "Profile Management", "Social Connections", "JWT Security"],
-    status: "Production Ready",
-  },
-  {
-    title: "Chat Application",
-    description:
-      "Real-time messaging app built with MERN stack and Socket.io, featuring live user status and instant messaging.",
-    tech: ["React.js", "Express.js", "Node.js", "MongoDB", "Socket.io", "Tailwind CSS"],
-    date: "April 2024",
-    features: ["Real-time Messaging", "JWT Authentication", "Live User Status", "Responsive UI"],
-    status: "Live Demo",
-  },
-  {
-    title: "Voting System",
-    description:
-      "Secure backend voting system with Aadhar registration, single-vote casting, and comprehensive admin features.",
-    tech: ["Express.js", "MongoDB", "Node.js"],
-    date: "Dec 2024",
-    features: ["Secure Authentication", "Admin Panel", "Vote Management", "Real-time Data"],
-    status: "Open Source",
-  },
-]
-
-const certifications = [
-  "Google AI Study Jam Program - Active Participation",
-  "JavaScript Mastery - Namaste JavaScript",
-  "GSSoC Open Source Contributions",
-  "API Fundamentals - Postman Certified",
-  "GitHub Foundation Certified",
-]
-
-const achievements = [
-  "Ranked 937th in GSSoC for open source contributions",
-  "Google Cloud Arcade Facilitator and Gen AI Study Jam Program",
-  "Hacktoberfest and DevFest AI open source contributions",
-]
-
 export default function Portfolio() {
-  const [profileImage, setProfileImage] = useState<string | null>(null)
+  const [githubProfileImage, setGithubProfileImage] = useState<string | null>(null)
   const [isScrollingDown, setIsScrollingDown] = useState(false)
+  const [isProfileManagerOpen, setIsProfileManagerOpen] = useState(false)
   const { scrollYProgress } = useScroll()
   const pathLength = useSpring(scrollYProgress, { stiffness: 400, damping: 90 })
+  const { profileData } = useProfile()
+
+  // Use uploaded profile image or fallback to GitHub
+  const profileImage = profileData.personalInfo.profileImage || githubProfileImage
 
   // Navigation links for mobile menu
   const navLinks = [
@@ -133,18 +89,20 @@ export default function Portfolio() {
   useEffect(() => {
     const fetchGithubProfile = async () => {
       try {
-        const response = await fetch("https://api.github.com/users/piyusdev2006")
+        const response = await fetch(`https://api.github.com/users/${profileData.personalInfo.githubUsername}`)
         if (response.ok) {
           const data = await response.json()
-          setProfileImage(data.avatar_url)
+          setGithubProfileImage(data.avatar_url)
         }
       } catch (error) {
         console.error("Error fetching GitHub profile:", error)
       }
     }
 
-    fetchGithubProfile()
-  }, [])
+    if (profileData.personalInfo.githubUsername && !profileData.personalInfo.profileImage) {
+      fetchGithubProfile()
+    }
+  }, [profileData.personalInfo.githubUsername, profileData.personalInfo.profileImage])
 
   useEffect(() => {
     // Throttle scroll events for better performance
@@ -167,31 +125,72 @@ export default function Portfolio() {
     }
   }, [handleScroll])
 
+  const skillsByCategory = profileData.skills.reduce(
+    (acc, skill) => {
+      if (!acc[skill.category]) acc[skill.category] = []
+      acc[skill.category].push(skill.name)
+      return acc
+    },
+    {} as Record<string, string[]>,
+  )
+
+  // Fixed resume download function
+  const handleResumeDownload = () => {
+    if (profileData.personalInfo.resumeUrl) {
+      try {
+        // Create a temporary link element
+        const link = document.createElement("a")
+        link.href = profileData.personalInfo.resumeUrl
+        link.download = `${profileData.personalInfo.name.replace(/\s+/g, "_")}_Resume.pdf`
+        link.target = "_blank"
+
+        // Append to body, click, and remove
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      } catch (error) {
+        console.error("Error downloading resume:", error)
+        // Fallback: open in new tab
+        window.open(profileData.personalInfo.resumeUrl, "_blank")
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground overflow-hidden relative">
-      {/* Linear-inspired Background */}
+      {/* Enhanced Linear-inspired Background */}
       <LinearBackground />
 
-      {/* Particle System */}
+      {/* Enhanced Particle System */}
       <ParticleSystem />
 
-      {/* Navigation - Fixed and thinner */}
+      {/* Navigation - Enhanced with better dynamics */}
       <motion.nav
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className="fixed top-0 w-full z-40 backdrop-blur-xl bg-black/30 border-b border-white/10"
       >
-        <div className="container mx-auto px-6 py-2 flex justify-between items-center">
+        {/* Animated nav background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/5 via-blue-500/5 to-purple-600/5" />
+
+        <div className="container mx-auto px-6 py-3 flex justify-between items-center relative z-10">
           <motion.div whileHover={{ scale: 1.05 }} className="flex items-center gap-3">
             <motion.div
-              className="w-7 h-7 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center"
+              className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center relative overflow-hidden"
               whileHover={{ rotate: 180 }}
               transition={{ duration: 0.3 }}
             >
-              <span className="text-black font-bold text-xs">NS</span>
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                animate={{ x: ["-100%", "100%"] }}
+                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+              />
+              <span className="text-black font-bold text-sm relative z-10">NS</span>
             </motion.div>
-            <span className="text-lg font-bold">Naveen Singh</span>
+            <span className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              {profileData.personalInfo.name}
+            </span>
           </motion.div>
 
           <div className="hidden md:flex items-center gap-6">
@@ -199,7 +198,7 @@ export default function Portfolio() {
               <motion.a
                 key={item.name}
                 href={item.href}
-                className="text-gray-300 hover:text-white transition-colors relative group text-sm"
+                className="text-gray-300 hover:text-white transition-colors relative group text-sm font-medium"
                 whileHover={{ y: -2 }}
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -207,7 +206,7 @@ export default function Portfolio() {
               >
                 {item.name}
                 <motion.span
-                  className="absolute -bottom-1 left-0 h-0.5 bg-cyan-400"
+                  className="absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full"
                   initial={{ width: 0 }}
                   whileHover={{ width: "100%" }}
                   transition={{ duration: 0.3 }}
@@ -218,14 +217,35 @@ export default function Portfolio() {
 
           <div className="flex items-center gap-3">
             <ThemeToggle />
+
+            {/* Enhanced Resume Download Button */}
             <motion.div {...scaleOnHover} className="hidden md:block">
               <Button
                 variant="outline"
                 size="sm"
-                className="border-white/20 bg-white/5 hover:bg-white/10 text-xs px-3 py-1"
+                onClick={handleResumeDownload}
+                disabled={!profileData.personalInfo.resumeUrl}
+                className={`border-white/20 bg-white/5 hover:bg-white/10 text-xs px-4 py-2 rounded-xl transition-all duration-300 ${
+                  profileData.personalInfo.resumeUrl
+                    ? "hover:border-cyan-400/50 hover:shadow-lg hover:shadow-cyan-400/25 cursor-pointer"
+                    : "opacity-50 cursor-not-allowed"
+                }`}
               >
-                <Download className="w-3 h-3 mr-1" />
-                Resume
+                <Download className="w-3 h-3 mr-2" />
+                {profileData.personalInfo.resumeUrl ? "Resume" : "No Resume"}
+              </Button>
+            </motion.div>
+
+            {/* Enhanced Profile Manager Toggle Button */}
+            <motion.div {...scaleOnHover}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsProfileManagerOpen(true)}
+                className="border-white/20 bg-white/5 hover:bg-white/10 text-xs px-4 py-2 rounded-xl hover:border-purple-400/50 hover:shadow-lg hover:shadow-purple-400/25 transition-all duration-300"
+              >
+                <Settings className="w-3 h-3 mr-2" />
+                Edit
               </Button>
             </motion.div>
 
@@ -235,8 +255,8 @@ export default function Portfolio() {
         </div>
       </motion.nav>
 
-      {/* Hero Section - Adjusted for thinner header */}
-      <section id="about" className="relative min-h-screen flex items-center justify-center px-6 z-10 pt-16">
+      {/* Enhanced Hero Section */}
+      <section id="about" className="relative min-h-screen flex items-center justify-center px-6 z-10 pt-20">
         <div className="container mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -244,58 +264,87 @@ export default function Portfolio() {
             transition={{ duration: 1, ease: [0.6, -0.05, 0.01, 0.99] }}
             className="mb-12 relative z-[100] mt-16"
           >
-            <div className="relative w-40 h-40 mx-auto mb-8">
-              {/* Animated rings around profile */}
+            <div className="relative w-48 h-48 mx-auto mb-8">
+              {/* Enhanced animated rings */}
               <motion.div
                 className="absolute inset-0 rounded-full border-2 border-cyan-400/30"
-                animate={{ rotate: 360, scale: [1, 1.1, 1] }}
-                transition={{ duration: 8, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                animate={{
+                  rotate: 360,
+                  scale: [1, 1.1, 1],
+                  borderColor: ["rgba(0, 212, 255, 0.3)", "rgba(168, 85, 247, 0.3)", "rgba(0, 212, 255, 0.3)"],
+                }}
+                transition={{
+                  rotate: { duration: 8, repeat: Number.POSITIVE_INFINITY, ease: "linear" },
+                  scale: { duration: 4, repeat: Number.POSITIVE_INFINITY },
+                  borderColor: { duration: 6, repeat: Number.POSITIVE_INFINITY },
+                }}
               />
               <motion.div
-                className="absolute inset-2 rounded-full border border-blue-400/20"
-                animate={{ rotate: -360, scale: [1, 0.9, 1] }}
-                transition={{ duration: 12, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                className="absolute inset-3 rounded-full border border-blue-400/20"
+                animate={{
+                  rotate: -360,
+                  scale: [1, 0.9, 1],
+                  borderColor: ["rgba(59, 130, 246, 0.2)", "rgba(236, 72, 153, 0.2)", "rgba(59, 130, 246, 0.2)"],
+                }}
+                transition={{
+                  rotate: { duration: 12, repeat: Number.POSITIVE_INFINITY, ease: "linear" },
+                  scale: { duration: 6, repeat: Number.POSITIVE_INFINITY },
+                  borderColor: { duration: 8, repeat: Number.POSITIVE_INFINITY },
+                }}
               />
 
-              {/* Profile image container */}
+              {/* Enhanced profile image container */}
               <motion.div
-                className="absolute inset-4 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 p-1"
+                className="absolute inset-6 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 p-1 shadow-2xl shadow-cyan-400/25"
                 animate={{ rotate: 360 }}
                 transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
               >
-                <div className="w-full h-full rounded-full bg-black flex items-center justify-center overflow-hidden relative z-[100]">
+                <div className="w-full h-full rounded-full bg-black flex items-center justify-center overflow-hidden relative z-[100] border-2 border-white/10">
                   {profileImage ? (
-                    <Image
-                      src={profileImage || "/placeholder.svg"}
-                      alt="Naveen Singh"
-                      width={128}
-                      height={128}
-                      className="w-full h-full object-cover rounded-full"
-                    />
+                    <motion.div
+                      className="w-full h-full relative"
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Image
+                        src={profileImage || "/placeholder.svg"}
+                        alt={profileData.personalInfo.name}
+                        fill
+                        className="object-cover rounded-full"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-full" />
+                    </motion.div>
                   ) : (
-                    <User className="w-16 h-16 text-gray-400" />
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      className="w-20 h-20 bg-gradient-to-r from-gray-400 to-gray-600 rounded-full flex items-center justify-center"
+                    >
+                      <User className="w-10 h-10 text-white" />
+                    </motion.div>
                   )}
                 </div>
               </motion.div>
 
-              {/* Floating status indicator */}
+              {/* Enhanced floating status indicator */}
               <motion.div
-                className="absolute -top-2 -right-2 w-8 h-8 bg-green-400 rounded-full flex items-center justify-center border-2 border-black z-[100]"
+                className="absolute -top-2 -right-2 w-10 h-10 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center border-3 border-black z-[100] shadow-lg shadow-green-400/25"
                 animate={{
                   scale: [1, 1.2, 1],
                   boxShadow: [
                     "0 0 0 0 rgba(34, 197, 94, 0.7)",
-                    "0 0 0 10px rgba(34, 197, 94, 0)",
+                    "0 0 0 15px rgba(34, 197, 94, 0)",
                     "0 0 0 0 rgba(34, 197, 94, 0)",
                   ],
                 }}
                 transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+                whileHover={{ scale: 1.3, rotate: 360 }}
               >
-                <Sparkles className="w-4 h-4 text-black" />
+                <Sparkles className="w-5 h-5 text-black" />
               </motion.div>
             </div>
           </motion.div>
 
+          {/* Rest of the hero section remains the same */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
@@ -341,8 +390,7 @@ export default function Portfolio() {
             transition={{ delay: 1.1, duration: 0.8 }}
             className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed"
           >
-            A passionate full-stack developer crafting scalable web applications with modern technologies. Specialized
-            in MERN stack development.
+            {profileData.personalInfo.bio}
           </motion.p>
 
           <motion.div
@@ -355,7 +403,7 @@ export default function Portfolio() {
               <Link href="#contact">
                 <Button
                   size="lg"
-                  className="bg-gradient-to-r from-cyan-400 to-blue-500 text-black hover:from-cyan-300 hover:to-blue-400 px-8 py-4 text-lg font-semibold relative overflow-hidden group"
+                  className="bg-gradient-to-r from-cyan-400 to-blue-500 text-black hover:from-cyan-300 hover:to-blue-400 px-8 py-4 text-lg font-semibold relative overflow-hidden group rounded-xl shadow-lg shadow-cyan-400/25"
                 >
                   <motion.div
                     className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
@@ -372,16 +420,24 @@ export default function Portfolio() {
 
             <div className="flex items-center gap-4">
               <motion.div {...scaleOnHover}>
-                <Link href="https://github.com/piyusdev2006" target="_blank">
-                  <Button variant="outline" size="lg" className="border-white/20 bg-white/5 hover:bg-white/10">
+                <Link href={`https://github.com/${profileData.personalInfo.githubUsername}`} target="_blank">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="border-white/20 bg-white/5 hover:bg-white/10 rounded-xl hover:border-purple-400/50 hover:shadow-lg hover:shadow-purple-400/25 transition-all duration-300"
+                  >
                     <Github className="w-5 h-5 mr-2" />
                     GitHub
                   </Button>
                 </Link>
               </motion.div>
               <motion.div {...scaleOnHover}>
-                <Link href="https://www.linkedin.com/in/ns51/" target="_blank">
-                  <Button variant="outline" size="lg" className="border-white/20 bg-white/5 hover:bg-white/10">
+                <Link href={`https://www.linkedin.com/in/${profileData.personalInfo.linkedinUsername}`} target="_blank">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="border-white/20 bg-white/5 hover:bg-white/10 rounded-xl hover:border-blue-400/50 hover:shadow-lg hover:shadow-blue-400/25 transition-all duration-300"
+                  >
                     <Linkedin className="w-5 h-5 mr-2" />
                     LinkedIn
                   </Button>
@@ -390,11 +446,12 @@ export default function Portfolio() {
             </div>
           </motion.div>
 
+          {/* Enhanced terminal display */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.5, duration: 0.8 }}
-            className="inline-flex items-center gap-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl px-6 py-4 relative overflow-hidden group"
+            className="inline-flex items-center gap-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl px-6 py-4 relative overflow-hidden group hover:bg-white/10 transition-all duration-300"
           >
             <Terminal className="w-5 h-5 text-cyan-400" />
             <code className="text-gray-300 font-mono">npm install naveen-skills</code>
@@ -420,7 +477,8 @@ export default function Portfolio() {
             <motion.div
               animate={{ y: [0, 10, 0] }}
               transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
-              className="flex flex-col items-center gap-2 text-gray-400"
+              className="flex flex-col items-center gap-2 text-gray-400 cursor-pointer"
+              onClick={() => document.getElementById("tech-showcase")?.scrollIntoView({ behavior: "smooth" })}
             >
               <span className="text-sm">Scroll to explore</span>
               <ChevronDown className="w-5 h-5" />
@@ -429,66 +487,8 @@ export default function Portfolio() {
         </div>
       </section>
 
-      {/* Tech Stack Showcase */}
-      <section className="py-32 px-6 relative z-10">
-        <div className="container mx-auto">
-          <ScrollReveal>
-            <div className="text-center mb-20">
-              <h2 className="text-5xl font-bold mb-6">Tech Arsenal</h2>
-              <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                Cutting-edge technologies I use to bring ideas to life
-              </p>
-            </div>
-          </ScrollReveal>
-
-          <motion.div
-            variants={staggerContainer}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
-          >
-            {[
-              { name: "React.js", icon: "⚛️", category: "Frontend", color: "from-blue-400 to-cyan-400" },
-              { name: "Node.js", icon: "🟢", category: "Backend", color: "from-green-400 to-emerald-400" },
-              { name: "MongoDB", icon: "🍃", category: "Database", color: "from-green-500 to-teal-500" },
-              { name: "Express.js", icon: "🚀", category: "Framework", color: "from-gray-400 to-gray-600" },
-              { name: "JavaScript", icon: "💛", category: "Language", color: "from-cyan-400 to-blue-400" },
-              { name: "Tailwind", icon: "🎨", category: "Styling", color: "from-cyan-400 to-blue-500" },
-              { name: "Git", icon: "📝", category: "Version Control", color: "from-orange-400 to-red-400" },
-              { name: "VS Code", icon: "💙", category: "Editor", color: "from-blue-500 to-purple-500" },
-            ].map((tech, index) => (
-              <ScrollReveal key={tech.name} delay={index * 0.1} direction={index % 2 === 0 ? "left" : "right"}>
-                <motion.div
-                  whileHover={{
-                    scale: 1.05,
-                    rotateY: 10,
-                    transition: { duration: 0.2 },
-                  }}
-                  className="group"
-                >
-                  <Card className="bg-white/5 border-white/10 hover:bg-white/10 transition-all duration-300 backdrop-blur-sm relative overflow-hidden">
-                    <motion.div
-                      className={`absolute inset-0 bg-gradient-to-br ${tech.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
-                    />
-                    <CardContent className="p-6 text-center relative z-10">
-                      <motion.div
-                        className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300"
-                        whileHover={{ rotate: [0, -10, 10, 0] }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        {tech.icon}
-                      </motion.div>
-                      <h3 className="font-semibold text-lg mb-2">{tech.name}</h3>
-                      <p className="text-sm text-gray-400">{tech.category}</p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </ScrollReveal>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+      {/* Replace Tech Stack with Enhanced TechShowcase */}
+      <TechShowcase />
 
       {/* Projects Section */}
       <section id="projects" className="py-32 px-6 relative z-10">
@@ -509,7 +509,7 @@ export default function Portfolio() {
             viewport={{ once: true }}
             className="grid lg:grid-cols-3 gap-8"
           >
-            {projects.map((project, index) => (
+            {profileData.projects.map((project, index) => (
               <ScrollReveal key={index} delay={index * 0.2}>
                 <motion.div whileHover={{ y: -10 }} className="group">
                   <Card className="bg-white/5 border-white/10 hover:bg-white/10 transition-all duration-500 backdrop-blur-sm h-full overflow-hidden">
@@ -578,6 +578,7 @@ export default function Portfolio() {
                               variant="outline"
                               size="sm"
                               className="w-full border-white/20 bg-white/5 hover:bg-white/10"
+                              onClick={() => project.githubUrl && window.open(project.githubUrl, "_blank")}
                             >
                               <Github className="w-4 h-4 mr-2" />
                               Code
@@ -587,6 +588,7 @@ export default function Portfolio() {
                             <Button
                               size="sm"
                               className="w-full bg-gradient-to-r from-cyan-400 to-blue-500 text-black hover:from-cyan-300 hover:to-blue-400"
+                              onClick={() => project.liveUrl && window.open(project.liveUrl, "_blank")}
                             >
                               <ExternalLink className="w-4 h-4 mr-2" />
                               Demo
@@ -603,318 +605,11 @@ export default function Portfolio() {
         </div>
       </section>
 
-      {/* Skills Section */}
-      <section id="skills" className="py-32 px-6 relative z-10">
-        <div className="container mx-auto">
-          <ScrollReveal>
-            <div className="text-center mb-20">
-              <h2 className="text-5xl font-bold mb-6">Expertise</h2>
-              <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                A comprehensive skill set spanning the full development lifecycle
-              </p>
-            </div>
-          </ScrollReveal>
+      {/* Replace Skills Section with Enhanced ExpertiseHub */}
+      <ExpertiseHub />
 
-          {/* LeetCode and GitHub Stats - Side by Side */}
-          <div className="grid lg:grid-cols-2 gap-8 mb-16">
-            {/* LeetCode Profile Card */}
-            <ScrollReveal direction="left">
-              <Card className="bg-gradient-to-br from-orange-500/10 to-yellow-500/10 border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 backdrop-blur-sm h-full">
-                <CardHeader className="text-center">
-                  <div className="flex items-center justify-center gap-4 mb-4">
-                    <motion.div
-                      className="w-12 h-12 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-2xl flex items-center justify-center"
-                      whileHover={{ rotate: 360, scale: 1.1 }}
-                      transition={{ duration: 0.6 }}
-                    >
-                      <Code className="w-6 h-6 text-white" />
-                    </motion.div>
-                    <div>
-                      <CardTitle className="text-2xl text-orange-400">LeetCode</CardTitle>
-                      <p className="text-gray-400 text-sm">Problem Solving</p>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <motion.div className="text-center" whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Trophy className="w-4 h-4 text-yellow-400" />
-                        <span className="text-xl font-bold text-yellow-400">16</span>
-                      </div>
-                      <p className="text-gray-400 text-sm">Solved</p>
-                    </motion.div>
-
-                    <motion.div className="text-center" whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Target className="w-4 h-4 text-blue-400" />
-                        <span className="text-xl font-bold text-blue-400">3.6M</span>
-                      </div>
-                      <p className="text-gray-400 text-sm">Rank</p>
-                    </motion.div>
-
-                    <motion.div className="text-center" whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <TrendingUp className="w-4 h-4 text-purple-400" />
-                        <span className="text-xl font-bold text-purple-400">21</span>
-                      </div>
-                      <p className="text-gray-400 text-sm">Submissions</p>
-                    </motion.div>
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-green-400">Easy: 14</span>
-                      <span className="text-yellow-400">Medium: 2</span>
-                      <span className="text-red-400">Hard: 0</span>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <h4 className="font-semibold mb-2 text-orange-400 text-sm">Skills</h4>
-                    <div className="flex gap-2 flex-wrap">
-                      {["Game Theory", "Dynamic Programming"].map((skill) => (
-                        <Badge key={skill} variant="secondary" className="bg-purple-500/20 text-purple-300 text-xs">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <motion.div className="text-center" {...scaleOnHover}>
-                    <Link href="https://leetcode.com/u/Navi_2006/" target="_blank">
-                      <Button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 text-sm w-full">
-                        <ExternalLink className="w-3 h-3 mr-2" />
-                        View Profile
-                      </Button>
-                    </Link>
-                  </motion.div>
-                </CardContent>
-              </Card>
-            </ScrollReveal>
-
-            {/* GitHub Stats Card */}
-            <ScrollReveal direction="right">
-              <Card className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 backdrop-blur-sm h-full">
-                <CardHeader className="text-center">
-                  <div className="flex items-center justify-center gap-4 mb-4">
-                    <motion.div
-                      className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center"
-                      whileHover={{ rotate: 360, scale: 1.1 }}
-                      transition={{ duration: 0.6 }}
-                    >
-                      <Github className="w-6 h-6 text-white" />
-                    </motion.div>
-                    <div>
-                      <CardTitle className="text-2xl text-purple-400">GitHub</CardTitle>
-                      <p className="text-gray-400 text-sm">Open Source</p>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <motion.div className="text-center" whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Code className="w-4 h-4 text-green-400" />
-                        <span className="text-xl font-bold text-green-400">15+</span>
-                      </div>
-                      <p className="text-gray-400 text-sm">Repos</p>
-                    </motion.div>
-
-                    <motion.div className="text-center" whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Star className="w-4 h-4 text-yellow-400" />
-                        <span className="text-xl font-bold text-yellow-400">25+</span>
-                      </div>
-                      <p className="text-gray-400 text-sm">Stars</p>
-                    </motion.div>
-
-                    <motion.div className="text-center" whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <TrendingUp className="w-4 h-4 text-blue-400" />
-                        <span className="text-xl font-bold text-blue-400">200+</span>
-                      </div>
-                      <p className="text-gray-400 text-sm">Contributions</p>
-                    </motion.div>
-
-                    <motion.div className="text-center" whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Star className="w-4 h-4 text-orange-400" />
-                        <span className="text-xl font-bold text-orange-400">5+</span>
-                      </div>
-                      <p className="text-gray-400 text-sm">Languages</p>
-                    </motion.div>
-                  </div>
-
-                  <div className="mb-4">
-                    <h4 className="font-semibold mb-2 text-purple-400 text-sm">Top Languages</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { name: "JavaScript", percentage: 45 },
-                        { name: "C++", percentage: 25 },
-                        { name: "HTML", percentage: 15 },
-                        { name: "CSS", percentage: 15 },
-                      ].map((lang, index) => (
-                        <motion.div
-                          key={lang.name}
-                          className="bg-white/5 p-2 rounded text-center"
-                          whileHover={{ scale: 1.05 }}
-                          initial={{ opacity: 0, y: 10 }}
-                          whileInView={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                        >
-                          <div className="text-xs font-medium mb-1">{lang.name}</div>
-                          <div className="text-xs text-gray-400">{lang.percentage}%</div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <motion.div className="text-center" {...scaleOnHover}>
-                    <Link href="https://github.com/piyusdev2006" target="_blank">
-                      <Button className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 text-sm w-full">
-                        <Github className="w-3 h-3 mr-2" />
-                        View Profile
-                      </Button>
-                    </Link>
-                  </motion.div>
-                </CardContent>
-              </Card>
-            </ScrollReveal>
-          </div>
-
-          {/* Skills Grid */}
-          <motion.div
-            variants={staggerContainer}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
-          >
-            {[
-              { title: "Languages", skills: skills.languages, color: "from-red-500 to-orange-500" },
-              { title: "Frontend", skills: skills.frontend, color: "from-cyan-500 to-blue-500" },
-              { title: "Backend", skills: skills.backend, color: "from-green-500 to-emerald-500" },
-              { title: "Tools", skills: skills.tools, color: "from-purple-500 to-pink-500" },
-            ].map((category, index) => (
-              <ScrollReveal key={index} delay={index * 0.1}>
-                <Card className="bg-white/5 border-white/10 hover:bg-white/10 transition-all duration-300 backdrop-blur-sm h-full group">
-                  <CardHeader className="text-center">
-                    <motion.div
-                      className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-r ${category.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}
-                      whileHover={{ rotate: 360 }}
-                      transition={{ duration: 0.6 }}
-                    >
-                      <Code className="w-8 h-8 text-white" />
-                    </motion.div>
-                    <CardTitle className="text-xl">{category.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {category.skills.map((skill, idx) => (
-                        <motion.div
-                          key={idx}
-                          whileHover={{ x: 5, scale: 1.02 }}
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors"
-                        >
-                          <motion.div
-                            className="w-2 h-2 bg-cyan-400 rounded-full"
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, delay: idx * 0.2 }}
-                          />
-                          <span className="text-gray-300">{skill}</span>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </ScrollReveal>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Achievements Section */}
-      <section className="py-32 px-6 relative z-10">
-        <div className="container mx-auto">
-          <ScrollReveal>
-            <div className="text-center mb-20">
-              <h2 className="text-5xl font-bold mb-6">Recognition</h2>
-              <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                Certifications and achievements that validate my expertise
-              </p>
-            </div>
-          </ScrollReveal>
-
-          <div className="grid lg:grid-cols-2 gap-12 items-stretch">
-            <ScrollReveal direction="left">
-              <Card className="bg-white/5 border-white/10 backdrop-blur-sm h-full">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3 text-2xl">
-                    <Star className="w-6 h-6 text-cyan-400" />
-                    Certifications
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {certifications.map((cert, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        viewport={{ once: true }}
-                        whileHover={{ x: 10 }}
-                        className="flex items-start gap-4 p-3 rounded-lg hover:bg-white/5 transition-all duration-300 group"
-                      >
-                        <motion.div
-                          className="w-3 h-3 bg-cyan-400 rounded-full mt-2 group-hover:scale-125 transition-transform"
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                        />
-                        <span className="text-gray-300 group-hover:text-white transition-colors">{cert}</span>
-                      </motion.div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </ScrollReveal>
-
-            <ScrollReveal direction="right">
-              <Card className="bg-white/5 border-white/10 backdrop-blur-sm h-full">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3 text-2xl">
-                    <Trophy className="w-6 h-6 text-cyan-400" />
-                    Achievements
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {achievements.map((achievement, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        viewport={{ once: true }}
-                        whileHover={{ x: 10 }}
-                        className="flex items-start gap-4 p-3 rounded-lg hover:bg-white/5 transition-all duration-300 group"
-                      >
-                        <motion.div
-                          className="w-3 h-3 bg-blue-400 rounded-full mt-2 group-hover:scale-125 transition-transform"
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, delay: index * 0.3 }}
-                        />
-                        <span className="text-gray-300 group-hover:text-white transition-colors">{achievement}</span>
-                      </motion.div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </ScrollReveal>
-          </div>
-        </div>
-      </section>
+      {/* Replace Achievements Section with Enhanced RecognitionShowcase */}
+      <RecognitionShowcase />
 
       {/* Contact Section */}
       <section id="contact" className="py-32 px-6 relative z-10">
@@ -947,22 +642,22 @@ export default function Portfolio() {
                     {
                       icon: Mail,
                       label: "Email",
-                      value: "navinit25@gmail.com",
-                      href: "mailto:navinit25@gmail.com",
+                      value: profileData.personalInfo.email,
+                      href: `mailto:${profileData.personalInfo.email}`,
                       color: "from-cyan-400 to-blue-500",
                     },
                     {
                       icon: Github,
                       label: "GitHub",
-                      value: "piyusdev2006",
-                      href: "https://github.com/piyusdev2006",
+                      value: profileData.personalInfo.githubUsername,
+                      href: `https://github.com/${profileData.personalInfo.githubUsername}`,
                       color: "from-purple-400 to-pink-500",
                     },
                     {
                       icon: Linkedin,
                       label: "LinkedIn",
-                      value: "ns51",
-                      href: "https://www.linkedin.com/in/ns51/",
+                      value: profileData.personalInfo.linkedinUsername,
+                      href: `https://www.linkedin.com/in/${profileData.personalInfo.linkedinUsername}`,
                       color: "from-blue-400 to-indigo-500",
                     },
                   ].map((contact, index) => (
@@ -1021,14 +716,14 @@ export default function Portfolio() {
               >
                 <span className="text-black font-bold text-sm">NS</span>
               </motion.div>
-              <span className="text-gray-400">© 2024 Naveen Singh. Crafted with passion.</span>
+              <span className="text-gray-400">© 2024 {profileData.personalInfo.name}. Crafted with passion.</span>
             </div>
 
             <div className="flex items-center gap-6">
               {[
-                { icon: Github, href: "https://github.com/piyusdev2006" },
-                { icon: Linkedin, href: "https://www.linkedin.com/in/ns51/" },
-                { icon: Mail, href: "mailto:navinit25@gmail.com" },
+                { icon: Github, href: `https://github.com/${profileData.personalInfo.githubUsername}` },
+                { icon: Linkedin, href: `https://www.linkedin.com/in/${profileData.personalInfo.linkedinUsername}` },
+                { icon: Mail, href: `mailto:${profileData.personalInfo.email}` },
               ].map((social, index) => (
                 <motion.div key={index} whileHover={{ scale: 1.2, y: -2 }}>
                   <Link
@@ -1050,6 +745,9 @@ export default function Portfolio() {
         className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 to-blue-500 z-[101] origin-left"
         style={{ scaleX: pathLength }}
       />
+
+      {/* Profile Manager */}
+      <ProfileManager isOpen={isProfileManagerOpen} onClose={() => setIsProfileManagerOpen(false)} />
     </div>
   )
 }
