@@ -23,12 +23,16 @@ import {
   LinkIcon,
   Sparkles,
   Eye,
+  Camera,
+  Upload,
 } from "lucide-react"
 import { useProfile } from "@/hooks/use-profile"
 import { FileUpload } from "@/components/file-upload"
 import { ImagePreview } from "@/components/image-preview"
 import { UploadDemo } from "@/components/upload-demo"
 import type { Skill, Project } from "@/types/profile"
+import { ProfilePhotoEditor } from "./profile-photo-editor"
+import Image from "next/image"
 
 interface ProfileManagerProps {
   isOpen: boolean
@@ -265,6 +269,7 @@ const PersonalInfoTab = ({ personalInfo, onUpdate, onPreviewImage }: any) => {
   const [formData, setFormData] = useState(personalInfo)
   const [isSaving, setIsSaving] = useState(false)
   const [showDemo, setShowDemo] = useState(false)
+  const [showPhotoEditor, setShowPhotoEditor] = useState(false)
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -279,6 +284,26 @@ const PersonalInfoTab = ({ personalInfo, onUpdate, onPreviewImage }: any) => {
 
   const handleResumeChange = (file: string | null) => {
     setFormData({ ...formData, resumeUrl: file })
+  }
+
+  const handlePhotoEditorSave = () => {
+    handleSave()
+    setShowPhotoEditor(false)
+  }
+
+  const handlePhotoEditorCancel = () => {
+    setShowPhotoEditor(false)
+  }
+
+  if (showPhotoEditor) {
+    return (
+      <ProfilePhotoEditor
+        currentPhoto={formData.profileImage}
+        onPhotoChange={handleImageChange}
+        onSave={handlePhotoEditorSave}
+        onCancel={handlePhotoEditorCancel}
+      />
+    )
   }
 
   return (
@@ -338,31 +363,63 @@ const PersonalInfoTab = ({ personalInfo, onUpdate, onPreviewImage }: any) => {
         )}
       </AnimatePresence>
 
-      {/* File Uploads */}
+      {/* Photo and Resume Management */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Profile Photo Section */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
-          <FileUpload
-            type="image"
-            currentFile={formData.profileImage}
-            onFileChange={handleImageChange}
-            label="Profile Picture"
-            description="Upload your profile image (JPEG, JPG, PNG, WebP - Max 5MB)"
-          />
-          {formData.profileImage && (
-            <motion.div className="mt-4" whileHover={{ scale: 1.02 }}>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPreviewImage(formData.profileImage)}
-                className="border-white/20 bg-white/5 hover:bg-white/10 rounded-lg"
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                Preview Image
-              </Button>
-            </motion.div>
-          )}
+          <Card className="bg-white/5 border-white/10 overflow-hidden">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <Camera className="w-5 h-5 text-purple-400" />
+                Profile Photo
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {formData.profileImage ? (
+                <div className="space-y-4">
+                  <div className="relative w-32 h-32 mx-auto rounded-xl overflow-hidden bg-white/10">
+                    <Image
+                      src={formData.profileImage || "/placeholder.svg"}
+                      alt="Profile Preview"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => setShowPhotoEditor(true)}
+                      className="flex-1 bg-gradient-to-r from-purple-400 to-pink-500 text-white hover:from-purple-300 hover:to-pink-400 rounded-xl"
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      Edit Photo
+                    </Button>
+                    <Button
+                      onClick={() => onPreviewImage(formData.profileImage)}
+                      variant="outline"
+                      className="border-white/20 bg-white/5 hover:bg-white/10 rounded-xl"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400 mb-4">No profile photo uploaded</p>
+                  <Button
+                    onClick={() => setShowPhotoEditor(true)}
+                    className="bg-gradient-to-r from-purple-400 to-pink-500 text-white hover:from-purple-300 hover:to-pink-400 rounded-xl"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Photo
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </motion.div>
 
+        {/* Resume Section */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
           <FileUpload
             type="pdf"
@@ -374,7 +431,7 @@ const PersonalInfoTab = ({ personalInfo, onUpdate, onPreviewImage }: any) => {
         </motion.div>
       </div>
 
-      {/* Form Fields */}
+      {/* Form Fields - rest remains the same */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

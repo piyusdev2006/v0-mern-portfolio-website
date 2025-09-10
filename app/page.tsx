@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { motion, useScroll, useSpring } from "framer-motion"
+import { motion, useScroll, useSpring, AnimatePresence } from "framer-motion"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,6 +18,8 @@ import {
   ChevronDown,
   Sparkles,
   Settings,
+  TestTube,
+  X,
 } from "lucide-react"
 import Link from "next/link"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -33,6 +35,7 @@ import { TechShowcase } from "@/components/tech-showcase"
 import { ExpertiseHub } from "@/components/expertise-hub"
 import { RecognitionShowcase } from "@/components/recognition-showcase"
 import { useProfile } from "@/hooks/use-profile"
+import { PhotoEditorTest } from "@/components/photo-editor-test"
 
 const fadeInUp = {
   initial: { opacity: 0, y: 60 },
@@ -60,12 +63,28 @@ export default function Portfolio() {
   const [githubProfileImage, setGithubProfileImage] = useState<string | null>(null)
   const [isScrollingDown, setIsScrollingDown] = useState(false)
   const [isProfileManagerOpen, setIsProfileManagerOpen] = useState(false)
+  const [isTestPanelOpen, setIsTestPanelOpen] = useState(false)
   const { scrollYProgress } = useScroll()
   const pathLength = useSpring(scrollYProgress, { stiffness: 400, damping: 90 })
-  const { profileData } = useProfile()
+  const { profileData, isLoading } = useProfile()
+
+  // Create a simplified profile object for easier access
+  const profile = {
+    name: profileData.personalInfo.name,
+    title: profileData.personalInfo.title,
+    email: profileData.personalInfo.email,
+    bio: profileData.personalInfo.bio,
+    location: profileData.personalInfo.location,
+    profileImage: profileData.personalInfo.profileImage,
+    resumeUrl: profileData.personalInfo.resumeUrl,
+    githubUsername: profileData.personalInfo.githubUsername,
+    linkedinUsername: profileData.personalInfo.linkedinUsername,
+    skills: profileData.skills,
+    projects: profileData.projects,
+  }
 
   // Use uploaded profile image or fallback to GitHub
-  const profileImage = profileData.personalInfo.profileImage || githubProfileImage
+  const profileImage = profile.profileImage || githubProfileImage
 
   // Navigation links for mobile menu
   const navLinks = [
@@ -89,7 +108,7 @@ export default function Portfolio() {
   useEffect(() => {
     const fetchGithubProfile = async () => {
       try {
-        const response = await fetch(`https://api.github.com/users/${profileData.personalInfo.githubUsername}`)
+        const response = await fetch(`https://api.github.com/users/${profile.githubUsername}`)
         if (response.ok) {
           const data = await response.json()
           setGithubProfileImage(data.avatar_url)
@@ -99,10 +118,10 @@ export default function Portfolio() {
       }
     }
 
-    if (profileData.personalInfo.githubUsername && !profileData.personalInfo.profileImage) {
+    if (profile.githubUsername && !profile.profileImage) {
       fetchGithubProfile()
     }
-  }, [profileData.personalInfo.githubUsername, profileData.personalInfo.profileImage])
+  }, [profile.githubUsername, profile.profileImage])
 
   useEffect(() => {
     // Throttle scroll events for better performance
@@ -125,7 +144,7 @@ export default function Portfolio() {
     }
   }, [handleScroll])
 
-  const skillsByCategory = profileData.skills.reduce(
+  const skillsByCategory = profile.skills.reduce(
     (acc, skill) => {
       if (!acc[skill.category]) acc[skill.category] = []
       acc[skill.category].push(skill.name)
@@ -136,12 +155,12 @@ export default function Portfolio() {
 
   // Fixed resume download function
   const handleResumeDownload = () => {
-    if (profileData.personalInfo.resumeUrl) {
+    if (profile.resumeUrl) {
       try {
         // Create a temporary link element
         const link = document.createElement("a")
-        link.href = profileData.personalInfo.resumeUrl
-        link.download = `${profileData.personalInfo.name.replace(/\s+/g, "_")}_Resume.pdf`
+        link.href = profile.resumeUrl
+        link.download = `${profile.name.replace(/\s+/g, "_")}_Resume.pdf`
         link.target = "_blank"
 
         // Append to body, click, and remove
@@ -151,7 +170,7 @@ export default function Portfolio() {
       } catch (error) {
         console.error("Error downloading resume:", error)
         // Fallback: open in new tab
-        window.open(profileData.personalInfo.resumeUrl, "_blank")
+        window.open(profile.resumeUrl, "_blank")
       }
     }
   }
@@ -189,7 +208,7 @@ export default function Portfolio() {
               <span className="text-black font-bold text-sm relative z-10">NS</span>
             </motion.div>
             <span className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-              {profileData.personalInfo.name}
+              {profile.name}
             </span>
           </motion.div>
 
@@ -224,15 +243,15 @@ export default function Portfolio() {
                 variant="outline"
                 size="sm"
                 onClick={handleResumeDownload}
-                disabled={!profileData.personalInfo.resumeUrl}
+                disabled={!profile.resumeUrl}
                 className={`border-white/20 bg-white/5 hover:bg-white/10 text-xs px-4 py-2 rounded-xl transition-all duration-300 ${
-                  profileData.personalInfo.resumeUrl
+                  profile.resumeUrl
                     ? "hover:border-cyan-400/50 hover:shadow-lg hover:shadow-cyan-400/25 cursor-pointer"
                     : "opacity-50 cursor-not-allowed"
                 }`}
               >
                 <Download className="w-3 h-3 mr-2" />
-                {profileData.personalInfo.resumeUrl ? "Resume" : "No Resume"}
+                {profile.resumeUrl ? "Resume" : "No Resume"}
               </Button>
             </motion.div>
 
@@ -246,6 +265,19 @@ export default function Portfolio() {
               >
                 <Settings className="w-3 h-3 mr-2" />
                 Edit
+              </Button>
+            </motion.div>
+
+            {/* Photo Editor Test Button */}
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsTestPanelOpen(!isTestPanelOpen)}
+                className="border-white/20 bg-white/5 hover:bg-white/10 text-xs px-4 py-2 rounded-xl hover:border-green-400/50 hover:shadow-lg hover:shadow-green-400/25 transition-all duration-300"
+              >
+                <TestTube className="w-3 h-3 mr-2" />
+                Test Photo
               </Button>
             </motion.div>
 
@@ -308,7 +340,7 @@ export default function Portfolio() {
                     >
                       <Image
                         src={profileImage || "/placeholder.svg"}
-                        alt={profileData.personalInfo.name}
+                        alt={profile.name}
                         fill
                         className="object-cover rounded-full"
                       />
@@ -390,7 +422,7 @@ export default function Portfolio() {
             transition={{ delay: 1.1, duration: 0.8 }}
             className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed"
           >
-            {profileData.personalInfo.bio}
+            {profile.bio}
           </motion.p>
 
           <motion.div
@@ -420,7 +452,7 @@ export default function Portfolio() {
 
             <div className="flex items-center gap-4">
               <motion.div {...scaleOnHover}>
-                <Link href={`https://github.com/${profileData.personalInfo.githubUsername}`} target="_blank">
+                <Link href={`https://github.com/${profile.githubUsername}`} target="_blank">
                   <Button
                     variant="outline"
                     size="lg"
@@ -432,7 +464,7 @@ export default function Portfolio() {
                 </Link>
               </motion.div>
               <motion.div {...scaleOnHover}>
-                <Link href={`https://www.linkedin.com/in/${profileData.personalInfo.linkedinUsername}`} target="_blank">
+                <Link href={`https://www.linkedin.com/in/${profile.linkedinUsername}`} target="_blank">
                   <Button
                     variant="outline"
                     size="lg"
@@ -509,7 +541,7 @@ export default function Portfolio() {
             viewport={{ once: true }}
             className="grid lg:grid-cols-3 gap-8"
           >
-            {profileData.projects.map((project, index) => (
+            {profile.projects.map((project, index) => (
               <ScrollReveal key={index} delay={index * 0.2}>
                 <motion.div whileHover={{ y: -10 }} className="group">
                   <Card className="bg-white/5 border-white/10 hover:bg-white/10 transition-all duration-500 backdrop-blur-sm h-full overflow-hidden">
@@ -642,22 +674,22 @@ export default function Portfolio() {
                     {
                       icon: Mail,
                       label: "Email",
-                      value: profileData.personalInfo.email,
-                      href: `mailto:${profileData.personalInfo.email}`,
+                      value: profile.email,
+                      href: `mailto:${profile.email}`,
                       color: "from-cyan-400 to-blue-500",
                     },
                     {
                       icon: Github,
                       label: "GitHub",
-                      value: profileData.personalInfo.githubUsername,
-                      href: `https://github.com/${profileData.personalInfo.githubUsername}`,
+                      value: profile.githubUsername,
+                      href: `https://github.com/${profile.githubUsername}`,
                       color: "from-purple-400 to-pink-500",
                     },
                     {
                       icon: Linkedin,
                       label: "LinkedIn",
-                      value: profileData.personalInfo.linkedinUsername,
-                      href: `https://www.linkedin.com/in/${profileData.personalInfo.linkedinUsername}`,
+                      value: profile.linkedinUsername,
+                      href: `https://www.linkedin.com/in/${profile.linkedinUsername}`,
                       color: "from-blue-400 to-indigo-500",
                     },
                   ].map((contact, index) => (
@@ -716,14 +748,14 @@ export default function Portfolio() {
               >
                 <span className="text-black font-bold text-sm">NS</span>
               </motion.div>
-              <span className="text-gray-400">© 2024 {profileData.personalInfo.name}. Crafted with passion.</span>
+              <span className="text-gray-400">© 2024 {profile.name}. Crafted with passion.</span>
             </div>
 
             <div className="flex items-center gap-6">
               {[
-                { icon: Github, href: `https://github.com/${profileData.personalInfo.githubUsername}` },
-                { icon: Linkedin, href: `https://www.linkedin.com/in/${profileData.personalInfo.linkedinUsername}` },
-                { icon: Mail, href: `mailto:${profileData.personalInfo.email}` },
+                { icon: Github, href: `https://github.com/${profile.githubUsername}` },
+                { icon: Linkedin, href: `https://www.linkedin.com/in/${profile.linkedinUsername}` },
+                { icon: Mail, href: `mailto:${profile.email}` },
               ].map((social, index) => (
                 <motion.div key={index} whileHover={{ scale: 1.2, y: -2 }}>
                   <Link
@@ -748,6 +780,40 @@ export default function Portfolio() {
 
       {/* Profile Manager */}
       <ProfileManager isOpen={isProfileManagerOpen} onClose={() => setIsProfileManagerOpen(false)} />
+
+      {/* Photo Editor Test Panel */}
+      <AnimatePresence>
+        {isTestPanelOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[250] flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gradient-to-br from-gray-900 to-black border border-white/20 rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-y-auto"
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold">Photo Editor Testing Suite</h2>
+                  <Button
+                    onClick={() => setIsTestPanelOpen(false)}
+                    variant="outline"
+                    size="sm"
+                    className="border-white/20 bg-white/5 hover:bg-white/10 rounded-xl"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <PhotoEditorTest />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
